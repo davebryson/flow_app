@@ -1,0 +1,103 @@
+<html>
+  <head>
+    <title>Elixir Example</title>
+    <link href='/static/css/styles.css' rel='stylesheet' type='text/css'/>
+    <script src="/static/jquery.min.js"></script>
+  </head>
+  <body>
+    <div id='main'>
+      <div id='header'>
+        <h1>SVMP Proxy example</h1>
+        <p>
+          Example of Elixir/Erlang supervisors.  
+          This example sends a websocket request through the WS server to a TCP Server. The TCP echoes the information back.
+          All is managed by a supervisor that will restart the application when one of the components dies.
+        </p>
+        <p>
+          <code>WebPage <-> WS Server <-> TCP Server</code>
+        <p>
+          The JavaScript opens a websocket at "ws://localhost:8080/websocket", and communicates with the
+          server as below.
+        </p>
+      </div>
+      <hr>
+      <div id='dynamic'>
+        <h2 id='statusbar'>Status: <span id='status'></span></h2>
+        <div id="push">
+          <h2>Talk to the TCP Server</h2>
+          <p>
+            Click the button below to send a message to the server and get a reply.
+          </p>
+          <p>
+            <b>To kill the TCP server, send the message: Q</b>
+            <br/>
+            Then reload this page in the browser and note how the supervisor has automagically restarted everything.
+          </p>
+          <input id='message_string' placeholder='Enter a message'></input>
+          <button id='send'>Send</button>
+          <div>
+            <h3>TCP Server Reply: <span id='server_reply' class='reply'>&nbsp;</span></h3>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  <script>
+var SocketHandler = (function(){
+  var my = {},
+    websocket,
+    messages = 0;
+
+  my.init = function(){
+    $('#send').click(sendMessage);
+    connect();
+  }  
+  function connect() {
+    websocket = new WebSocket('ws://localhost:8081/websocket');
+    websocket.onopen = function(evt) { onOpen(evt) }; 
+    websocket.onclose = function(evt) { onClose(evt) }; 
+    websocket.onmessage = function(evt) { onMessage(evt) }; 
+  };  
+
+  function onMessage(evt) { 
+    //console.log(evt.data);
+    message = JSON.parse(evt.data);
+    if ( message.time !== undefined) {
+      $('#server_time').html(message.time);
+    }
+    if(message.reply !== undefined) {
+      $('#server_reply').html(message.reply);
+    }
+  };  
+
+  function sendMessage(){
+    value = $('#message_string').val();
+    message = { 'message': value};
+    websocket.send(JSON.stringify(message));
+  };
+
+  function disconnect() {
+    websocket.close();
+  }; 
+
+  function onOpen(evt) { 
+    updateStatus('<span style="color: green;">CONNECTED </span>'); 
+  };  
+
+  function onClose(evt) { 
+    updateStatus('<span style="color: red;">DISCONNECTED </span>');
+  };  
+
+  function updateStatus(txt) { 
+    $('#status').html(txt);
+  };
+
+  return my;
+}());
+SocketHandler.init();
+  </script>
+  </body>
+</html>
+
+ 
